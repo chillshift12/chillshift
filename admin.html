@@ -1,250 +1,56 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <title>Chillshift Admin</title>
-
-  <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: #0b0b0b;
-      color: white;
-      padding: 30px;
+showMessage("Select a song and enter its title.");
+      return;
     }
 
-    .box {
-      max-width: 500px;
-      margin: 50px auto;
-      background: #171717;
-      padding: 30px;
-      border-radius: 18px;
+    showMessage("Uploading...");
+
+    const safeName =
+      Date.now() + "-" +
+      file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+
+    const { error: uploadError } =
+      await supabaseClient.storage
+        .from("music")
+        .upload(safeName, file);
+
+    if (uploadError) {
+      showMessage("Upload failed: " + uploadError.message);
+      return;
     }
 
-    h1 {
-      text-align: center;
-    }
+    const { data: publicData } =
+      supabaseClient.storage
+        .from("music")
+        .getPublicUrl(safeName);
 
-    input {
-      width: 100%;
-      box-sizing: border-box;
-      padding: 13px;
-      margin: 8px 0 15px;
-      border-radius: 8px;
-      border: 1px solid #444;
-      background: #222;
-      color: white;
-    }
-
-    button {
-      width: 100%;
-      padding: 13px;
-      margin-top: 10px;
-      border: 0;
-      border-radius: 8px;
-      cursor: pointer;
-      background: white;
-      color: black;
-      font-weight: bold;
-    }
-
-    #panel {
-      display: none;
-    }
-
-    #message {
-      margin-top: 15px;
-      text-align: center;
-    }
-
-    .logout {
-      background: #333;
-      color: white;
-    }
-  </style>
-</head>
-
-<body>
-
-  <div class="box">
-
-    <div id="login">
-
-      <h1>Chillshift Admin</h1>
-
-      <p>Owner Login</p>
-
-      <input
-        type="email"
-        id="email"
-        placeholder="Owner email"
-      >
-
-      <input
-        type="password"
-        id="password"
-        placeholder="Password"
-      >
-
-      <button onclick="login()">
-        LOGIN
-      </button>
-
-    </div>
-
-
-    <div id="panel">
-
-      <h1>Upload Song 🎵</h1>
-
-      <input
-        type="file"
-        id="songFile"
-        accept="audio/*"
-      >
-
-      <input
-        type="text"
-        id="title"
-        placeholder="Song title"
-      >
-
-      <input
-        type="text"
-        id="artist"
-        placeholder="Artist"
-      >
-
-      <input
-        type="text"
-        id="album"
-        placeholder="Album"
-      >
-
-      <button onclick="uploadSong()">
-        UPLOAD SONG
-      </button>
-
-      <button
-        class="logout"
-        onclick="logout()"
-      >
-        LOGOUT
-      </button>
-
-    </div>
-
-    <div id="message"></div>
-
-  </div>
-
-
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-  <script src="supabase-config.js"></script>
-
-  <script>
-
-    async function checkUser() {
-
-      const {
-        data: { session }
-      } = await supabaseClient.auth.getSession();
-
-      if (session) {
-        showPanel();
-      }
-
-    }
-
-
-    async function login() {
-
-      const email =
-        document.getElementById("email").value;
-
-      const password =
-        document.getElementById("password").value;
-
-      const message =
-        document.getElementById("message");
-
-      const { error } =
-        await supabaseClient.auth.signInWithPassword({
-          email: email,
-          password: password
+    const { error: databaseError } =
+      await supabaseClient
+        .from("songs")
+        .insert({
+          title: title,
+          artist: artist,
+          album: album,
+          file_url: publicData.publicUrl
         });
 
-      if (error) {
-
-        message.textContent =
-          "Login failed: " + error.message;
-
-        return;
-      }
-
-      message.textContent =
-        "Login successful.";
-
-      showPanel();
-
+    if (databaseError) {
+      showMessage(
+        "File uploaded, but database failed: " +
+        databaseError.message
+      );
+      return;
     }
 
+    showMessage("✅ Song uploaded successfully!");
 
-    function showPanel() {
+    document.getElementById("songFile").value = "";
+    document.getElementById("title").value = "";
+    document.getElementById("artist").value = "";
+    document.getElementById("album").value = "";
+  });
 
-      document.getElementById("login").style.display =
-        "none";
+  checkLogin();
+</script>
 
-      document.getElementById("panel").style.display =
-        "block";
-
-    }
-
-
-    async function logout() {
-
-      await supabaseClient.auth.signOut();
-
-      location.reload();
-
-    }
-
-
-    async function uploadSong() {
-
-      const file =
-        document.getElementById("songFile").files[0];
-
-      const title =
-        document.getElementById("title").value.trim();
-
-      const artist =
-        document.getElementById("artist").value.trim();
-
-      const album =
-        document.getElementById("album").value.trim();
-
-      const message =
-        document.getElementById("message");
-
-
-      if (!file || !title) {
-
-        message.textContent =
-          "Please select an MP3 and enter a title.";
-
-        return;
-
-      }
-
-
-      message.textContent =
-        "Uploading...";
-
-
-      const fileName =
-        Date.now() + "-" +
-        file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+</body>
+</html>
