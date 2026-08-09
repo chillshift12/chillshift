@@ -69,33 +69,79 @@
 
 <div class="box">
 
+  <!-- LOGIN -->
   <div id="login">
+
     <h1>Chillshift Admin</h1>
 
     <p>Owner Login</p>
 
-    <input type="email" id="email" placeholder="Owner email">
+    <input
+      type="email"
+      id="email"
+      value="chillshift12@gmail.com"
+      placeholder="Owner email"
+    >
 
-    <input type="password" id="password" placeholder="Password">
+    <input
+      type="password"
+      id="password"
+      placeholder="Password"
+    >
 
-  <button id="loginButton" type="button" onclick="login()">LOGIN</button>
+    <button
+      type="button"
+      onclick="login()"
+    >
+      LOGIN
+    </button>
+
   </div>
 
+
+  <!-- ADMIN PANEL -->
   <div id="panel">
 
     <h1>Upload Song 🎵</h1>
 
-    <input type="file" id="songFile" accept="audio/*">
+    <input
+      type="file"
+      id="songFile"
+      accept="audio/*"
+    >
 
-    <input type="text" id="title" placeholder="Song title">
+    <input
+      type="text"
+      id="title"
+      placeholder="Song title"
+    >
 
-    <input type="text" id="artist" placeholder="Artist">
+    <input
+      type="text"
+      id="artist"
+      placeholder="Artist"
+    >
 
-    <input type="text" id="album" placeholder="Album">
+    <input
+      type="text"
+      id="album"
+      placeholder="Album"
+    >
 
-    <button id="uploadButton">UPLOAD SONG</button>
+    <button
+      type="button"
+      onclick="uploadSong()"
+    >
+      UPLOAD SONG
+    </button>
 
-    <button class="logout" id="logoutButton">LOGOUT</button>
+    <button
+      type="button"
+      class="logout"
+      onclick="logout()"
+    >
+      LOGOUT
+    </button>
 
   </div>
 
@@ -103,97 +149,118 @@
 
 </div>
 
+
+<!-- SUPABASE -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <script src="supabase-config.js"></script>
 
+
 <script>
-  const loginButton = document.getElementById("loginButton");
-  const uploadButton = document.getElementById("uploadButton");
-  const logoutButton = document.getElementById("logoutButton");
 
-  const message = document.getElementById("message");
+async function login() {
 
-  function showMessage(text) {
-    message.textContent = text;
+  const email =
+    document.getElementById("email").value.trim();
+
+  const password =
+    document.getElementById("password").value;
+
+  const message =
+    document.getElementById("message");
+
+
+  if (!email || !password) {
+
+    message.textContent =
+      "Please enter your password.";
+
+    return;
   }
 
-  function showPanel() {
-    document.getElementById("login").style.display = "none";
-    document.getElementById("panel").style.display = "block";
-  }
 
-  function showLogin() {
-    document.getElementById("login").style.display = "block";
-    document.getElementById("panel").style.display = "none";
-  }
+  message.textContent =
+    "Logging in...";
 
-  async function checkLogin() {
 
-    const { data, error } =
-      await supabaseClient.auth.getSession();
-
-    if (error) {
-      showMessage("Connection error: " + error.message);
-      return;
-    }
-
-    if (data.session) {
-      showPanel();
-    }
-  }
-
-  loginButton.addEventListener("click", async function () {
-
-    const email =
-      document.getElementById("email").value.trim();
-
-    const password =
-      document.getElementById("password").value;
-
-    if (!email || !password) {
-      showMessage("Please enter email and password.");
-      return;
-    }
-
-    showMessage("Logging in...");
+  try {
 
     const { data, error } =
       await supabaseClient.auth.signInWithPassword({
+
         email: email,
+
         password: password
+
       });
 
+
     if (error) {
-      showMessage("Login failed: " + error.message);
+
+      message.textContent =
+        "Login failed: " + error.message;
+
       return;
     }
 
+
     if (data.session) {
-      showMessage("Login successful!");
-      showPanel();
+
+      message.textContent =
+        "✅ Login successful!";
+
+      document.getElementById("login").style.display =
+        "none";
+
+      document.getElementById("panel").style.display =
+        "block";
+
     }
-  });
 
-  logoutButton.addEventListener("click", async function () {
+  } catch (error) {
 
-    await supabaseClient.auth.signOut();
+    message.textContent =
+      "Connection error: " + error.message;
 
-    showLogin();
-    showMessage("Logged out.");
-  });
+  }
 
-  uploadButton.addEventListener("click", async function () {
+}
 
-    const file =
-      document.getElementById("songFile").files[0];
 
-    const title =
-      document.getElementById("title").value.trim();
+async function logout() {
 
-    const artist =
-      document.getElementById("artist").value.trim();
+  await supabaseClient.auth.signOut();
 
-    const album =
-      document.getElementById("album").value.trim();
+  document.getElementById("login").style.display =
+    "block";
 
-    if (!file || !title) {
+  document.getElementById("panel").style.display =
+    "none";
+
+  document.getElementById("password").value = "";
+
+  document.getElementById("message").textContent =
+    "Logged out.";
+
+}
+
+
+async function uploadSong() {
+
+  const file =
+    document.getElementById("songFile").files[0];
+
+  const title =
+    document.getElementById("title").value.trim();
+
+  const artist =
+    document.getElementById("artist").value.trim();
+
+  const album =
+    document.getElementById("album").value.trim();
+
+
+  if (!file) {
+
+    document.getElementById("message").textContent =
+      "Please select an MP3 file.";
