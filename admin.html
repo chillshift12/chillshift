@@ -1,56 +1,199 @@
-showMessage("Select a song and enter its title.");
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chillshift Admin</title>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #0b0b0b;
+      color: white;
+      padding: 30px;
+    }
+
+    .box {
+      max-width: 500px;
+      margin: 50px auto;
+      background: #171717;
+      padding: 30px;
+      border-radius: 18px;
+    }
+
+    h1 {
+      text-align: center;
+    }
+
+    input {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 13px;
+      margin: 8px 0 15px;
+      border-radius: 8px;
+      border: 1px solid #444;
+      background: #222;
+      color: white;
+    }
+
+    button {
+      width: 100%;
+      padding: 13px;
+      margin-top: 10px;
+      border: 0;
+      border-radius: 8px;
+      cursor: pointer;
+      background: white;
+      color: black;
+      font-weight: bold;
+    }
+
+    #panel {
+      display: none;
+    }
+
+    #message {
+      margin-top: 15px;
+      text-align: center;
+    }
+
+    .logout {
+      background: #333;
+      color: white;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="box">
+
+  <div id="login">
+    <h1>Chillshift Admin</h1>
+
+    <p>Owner Login</p>
+
+    <input type="email" id="email" placeholder="Owner email">
+
+    <input type="password" id="password" placeholder="Password">
+
+    <button id="loginButton">LOGIN</button>
+  </div>
+
+  <div id="panel">
+
+    <h1>Upload Song 🎵</h1>
+
+    <input type="file" id="songFile" accept="audio/*">
+
+    <input type="text" id="title" placeholder="Song title">
+
+    <input type="text" id="artist" placeholder="Artist">
+
+    <input type="text" id="album" placeholder="Album">
+
+    <button id="uploadButton">UPLOAD SONG</button>
+
+    <button class="logout" id="logoutButton">LOGOUT</button>
+
+  </div>
+
+  <div id="message"></div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
+
+<script>
+  const loginButton = document.getElementById("loginButton");
+  const uploadButton = document.getElementById("uploadButton");
+  const logoutButton = document.getElementById("logoutButton");
+
+  const message = document.getElementById("message");
+
+  function showMessage(text) {
+    message.textContent = text;
+  }
+
+  function showPanel() {
+    document.getElementById("login").style.display = "none";
+    document.getElementById("panel").style.display = "block";
+  }
+
+  function showLogin() {
+    document.getElementById("login").style.display = "block";
+    document.getElementById("panel").style.display = "none";
+  }
+
+  async function checkLogin() {
+
+    const { data, error } =
+      await supabaseClient.auth.getSession();
+
+    if (error) {
+      showMessage("Connection error: " + error.message);
       return;
     }
 
-    showMessage("Uploading...");
+    if (data.session) {
+      showPanel();
+    }
+  }
 
-    const safeName =
-      Date.now() + "-" +
-      file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+  loginButton.addEventListener("click", async function () {
 
-    const { error: uploadError } =
-      await supabaseClient.storage
-        .from("music")
-        .upload(safeName, file);
+    const email =
+      document.getElementById("email").value.trim();
 
-    if (uploadError) {
-      showMessage("Upload failed: " + uploadError.message);
+    const password =
+      document.getElementById("password").value;
+
+    if (!email || !password) {
+      showMessage("Please enter email and password.");
       return;
     }
 
-    const { data: publicData } =
-      supabaseClient.storage
-        .from("music")
-        .getPublicUrl(safeName);
+    showMessage("Logging in...");
 
-    const { error: databaseError } =
-      await supabaseClient
-        .from("songs")
-        .insert({
-          title: title,
-          artist: artist,
-          album: album,
-          file_url: publicData.publicUrl
-        });
+    const { data, error } =
+      await supabaseClient.auth.signInWithPassword({
+        email: email,
+        password: password
+      });
 
-    if (databaseError) {
-      showMessage(
-        "File uploaded, but database failed: " +
-        databaseError.message
-      );
+    if (error) {
+      showMessage("Login failed: " + error.message);
       return;
     }
 
-    showMessage("✅ Song uploaded successfully!");
-
-    document.getElementById("songFile").value = "";
-    document.getElementById("title").value = "";
-    document.getElementById("artist").value = "";
-    document.getElementById("album").value = "";
+    if (data.session) {
+      showMessage("Login successful!");
+      showPanel();
+    }
   });
 
-  checkLogin();
-</script>
+  logoutButton.addEventListener("click", async function () {
 
-</body>
-</html>
+    await supabaseClient.auth.signOut();
+
+    showLogin();
+    showMessage("Logged out.");
+  });
+
+  uploadButton.addEventListener("click", async function () {
+
+    const file =
+      document.getElementById("songFile").files[0];
+
+    const title =
+      document.getElementById("title").value.trim();
+
+    const artist =
+      document.getElementById("artist").value.trim();
+
+    const album =
+      document.getElementById("album").value.trim();
+
+    if (!file || !title) {
