@@ -1,0 +1,1 @@
+CHILLSHIFT website. Put your own MP3 files in music/ and update the songs array in script.js. Only upload music you own or are licensed to distribute.
